@@ -14,7 +14,7 @@ def run_command(command)
       puts "# " + path.to_s.sub(/#{File.dirname(__FILE__)}\//,'')
       puts "# " + command
       puts "-"*40
-      system command
+      sh command
       puts
     end
   end
@@ -22,7 +22,7 @@ end
 
 def each_project
   Projects.each do |project|
-    Dir.chdir("repos/#{project}") do 
+    Dir.chdir("repos/#{project}") do
       puts "="*50
       puts "# #{project}"
       puts "-"*40
@@ -79,7 +79,7 @@ namespace :gem do
     Projects.each do |project|
       path = ReposPath.join(project)
       FileUtils.cd(path) do
-        system "gem uninstall --all --executables --ignore-dependencies #{project}" 
+        system "gem uninstall --all --executables --ignore-dependencies #{project}"
       end
     end
   end
@@ -109,6 +109,12 @@ namespace :git do
   desc 'git pull on all the repos'
   task :pull => [:clone, 'bundle:unlock'] do
     run_command "git pull --rebase"
+  end
+
+  desc 'git checkout repos'
+  task :checkout, :version  do |t, args|
+    raise("rake git:checkout[VERSION]") unless args[:version]
+    run_command "git checkout #{args[:version]}"
   end
 
   task :st => :status
@@ -154,7 +160,6 @@ namespace :bundle do
 
   desc "install the gem bundles"
   task :install do
-    sh "bundle install"
     run_command 'bundle install'
   end
 end
@@ -163,4 +168,24 @@ task :setup => ["git:clone", "bundle:install"]
 
 task :default do
   run_command 'rake'
+end
+
+task :authors do
+  logs = Projects.inject("") do |logs, dir|
+    path = ReposPath.join(dir)
+    FileUtils.cd(path) do
+      logs << `git log`
+    end
+    logs
+  end
+  authors = logs.grep(/^Author/).
+    map{|l| l.sub(/Author: /,'')}.
+    map{|l| l.split('<').first}.
+    map{|l| l.split('and')}.flatten.
+    map{|l| l.split('+')}.flatten.
+    map{|l| l.split(',')}.flatten.
+    map{|l| l.strip}.
+    uniq.sort
+  puts "#{authors.count} authors: "
+  puts authors.join(", ")
 end
