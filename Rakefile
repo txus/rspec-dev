@@ -132,10 +132,9 @@ namespace :git do
       end
     end
 
-    unless File.directory?("repos/rspec-rails/vendor/arel") && File.directory?("repos/rspec-rails/vendor/rails")
+    unless File.directory?("repos/rspec-rails/vendor/rails")
       mkdir_p "repos/rspec-rails/vendor"
       Dir.chdir("repos/rspec-rails/vendor") do
-        sh "git clone git://github.com/rails/arel.git"
         sh "git clone git://github.com/rails/rails.git"
       end
     end
@@ -160,6 +159,7 @@ namespace :bundle do
 
   desc "install the gem bundles"
   task :install do
+    `gem install bundler` unless `gem list`.split("\n").detect {|g| g =~ /^bundler/}
     run_command 'bundle install'
   end
 end
